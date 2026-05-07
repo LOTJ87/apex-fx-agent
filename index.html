@@ -164,6 +164,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;backgroun
   <div class="cfg-grid">
     <div class="panel">
       <div class="p-lbl">Telegram Delivery</div>
+      <div class="field"><label class="f-lbl">Anthropic API Key</label><input type="password" id="fApiKey" placeholder="sk-ant-api03-..."/></div>
       <div class="field"><label class="f-lbl">Bot Token</label><input type="password" id="fTok" placeholder="1234567890:AAFxyz..."/></div>
       <div class="field"><label class="f-lbl">Chat ID</label><input type="text" id="fChat" placeholder="Numeric Chat ID"/></div>
       <div class="field">
@@ -303,11 +304,19 @@ async function tg(token,chatId,text){
 }
 
 async function claude(prompt){
+  const apiKey=document.getElementById('fApiKey').value.trim();
   const r=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
   });
   const d=await r.json();
+  if(d.error)throw new Error(d.error.message);
   return d.content.map(i=>i.text||'').join('').trim();
 }
 
@@ -513,8 +522,10 @@ function resetTimer(){
 }
 
 async function startAgent(){
+  const apiKey=document.getElementById('fApiKey').value.trim();
   const token=document.getElementById('fTok').value.trim();
   const chatId=document.getElementById('fChat').value.trim();
+  if(!apiKey){log('e','Enter Anthropic API Key');return;}
   if(!token){log('e','Enter Bot Token');return;}
   if(!chatId){log('e','Enter Chat ID');return;}
   if(syms().length===0){log('e','Select instruments');return;}
